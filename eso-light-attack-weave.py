@@ -40,7 +40,7 @@ def on_press(key):
         ignore_press = False
         return
     ignore_press = True
-    
+
     if not is_skill_key(key):
         # If it's not a skill key, just pass it through.
         try:
