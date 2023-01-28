@@ -43,6 +43,15 @@ def is_enabled_skill_key(key):
     return False
 
 
+def weave(key):
+    # TODO: Check if la_key requires mouse or keyboard input.
+    mc.click(la_key)
+    try:
+        kc.press(key.char)
+    except AttributeError:
+        kc.press(key)
+
+
 def on_press(key):
     # Make sure we don't intercept the key we just sent.
     global ignore_press
@@ -58,15 +67,7 @@ def on_press(key):
         except AttributeError:
             kc.press(key)
     else:
-        # NOTE: Actual macro implementation here.
-        # TODO: Check if la_key requires mouse or keyboard input.
-        mc.click(la_key)
-        try:
-            kc.press(key.char)
-        except AttributeError:
-            kc.press(key)
-
-        # return False
+        weave(key)
 
 
 def on_release(key):
