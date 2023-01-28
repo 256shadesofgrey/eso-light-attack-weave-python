@@ -15,10 +15,6 @@ la_key = Button.left
 # Which skills will be used with weaving (same order as in skill_keys).
 weaving_enabled = [1, 1, 1, 1, 1, 0]
 
-# Which skills will be block cancelled (same order as in skill_keys).
-block_cancelling_enabled = [0, 0, 0, 0, 0, 0]
-
-
 #===================================
 
 kc = keyboard.Controller()
