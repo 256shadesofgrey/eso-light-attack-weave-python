@@ -2,6 +2,8 @@ from pynput import keyboard, mouse
 from pynput.keyboard import Key
 from pynput.mouse import Button
 
+from drivers.KeyboardController_pynput import KeyboardController
+
 __all__ = []
 
 #========== Configuration ==========
@@ -18,6 +20,7 @@ weaving_enabled = [1, 1, 1, 1, 1, 0]
 #===================================
 
 kc = keyboard.Controller()
+kc2 = KeyboardController({"backend":"xorg"})
 mc = mouse.Controller()
 
 ignore_press = False
@@ -42,10 +45,11 @@ def is_enabled_skill_key(key):
 def weave(key):
     # TODO: Check if la_key requires mouse or keyboard input.
     mc.click(la_key)
-    try:
-        kc.press(key.char)
-    except AttributeError:
-        kc.press(key)
+    #try:
+    #    kc.press(key.char)
+    #except AttributeError:
+    #    kc.press(key)
+    kc2.press(key)
 
 
 def on_press(key):
@@ -55,6 +59,8 @@ def on_press(key):
         ignore_press = False
         return
     ignore_press = True
+
+    print("Pressed: {0}".format(key))
 
     if not is_enabled_skill_key(key):
         # If it's not a skill key or the key is disabled, just pass it through.
@@ -73,6 +79,8 @@ def on_release(key):
         ignore_release = False
         return
     ignore_release = True
+
+    print("Released: {0}".format(key))
 
     try:
         kc.release(key.char)
