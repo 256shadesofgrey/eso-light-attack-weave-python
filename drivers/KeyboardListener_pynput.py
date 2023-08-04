@@ -35,9 +35,19 @@ class KeyboardListener:
     self.action = action
 
     # Start the actual listener.
-    with keyboard.Listener(on_press=self.on_press, on_release=self.on_release,
-                           suppress=True) as listener:
-        listener.join()
+    # with keyboard.Listener(on_press=self.on_press, on_release=self.on_release, suppress=True) as listener_keyboard:
+    #     listener_keyboard.join()
+    self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release, suppress=True)
+    # self.listener.start()
+    # self.listener.join()
+
+
+  def start_listener(self):
+    self.listener.start()
+
+
+  def join_listener(self):
+    self.listener.join()
 
 
   def is_active_key(self, key):
@@ -49,7 +59,6 @@ class KeyboardListener:
 
   def on_press(self, key):
     # Make sure we don't intercept the key we just sent.
-    global ignore_press
     if self.ignore_press:
       self.ignore_press = False
       return
@@ -71,7 +80,6 @@ class KeyboardListener:
 
   def on_release(self, key):
     # Make sure we don't intercept the key we just sent.
-    global ignore_release
     if self.ignore_release:
       self.ignore_release = False
       return

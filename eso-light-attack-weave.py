@@ -5,6 +5,7 @@ from pynput.mouse import Button
 from drivers.KeyboardController_pynput import KeyboardController
 from drivers.KeyboardListener_pynput import KeyboardListener
 from drivers.MouseController_pynput import MouseController
+from drivers.MouseListener_pynput import MouseListener
 
 __all__ = []
 
@@ -30,9 +31,10 @@ weaving_enabled = [1, 1, 1, 1, 1, 0]
 kc = KeyboardController({"backend":"xorg"})
 #mc = mouse.Controller()
 mc = MouseController({"backend":"xorg"})
+ml = MouseListener(mc, {"backend":"xorg"})
 
-ignore_press = False
-ignore_release = False
+#ignore_press = False
+#ignore_release = False
 
 
 def is_skill_key(key):
@@ -59,7 +61,9 @@ def is_suspend_key(key):
 
 def weave(key):
     # TODO: Check if la_key and block_key requires mouse or keyboard input.
-    mc.tap(la_key)
+    if not ml.is_pressed(la_key) and not ml.is_pressed(block_key):
+        mc.tap(la_key)
+    # mc.tap(la_key)
     kc.press(key)
 
 
@@ -75,8 +79,14 @@ def action(key):
         suspend_toggle(key)
 
 
+# ml = MouseListener(mc, {"backend":"xorg"})
 kl = KeyboardListener(kc, action, {"active_keys":skill_keys+suspend_key, "backend":"xorg"})
+# ml = MouseListener(mc, {"backend":"xorg"})
 
+ml.start_listener()
+kl.start_listener()
+ml.join_listener()
+kl.join_listener()
 
 # def on_press(key):
 #     # Make sure we don't intercept the key we just sent.
