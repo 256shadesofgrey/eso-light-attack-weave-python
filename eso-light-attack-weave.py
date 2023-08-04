@@ -4,6 +4,7 @@ from pynput.mouse import Button
 
 from drivers.KeyboardController_pynput import KeyboardController
 from drivers.KeyboardListener_pynput import KeyboardListener
+from drivers.MouseController_pynput import MouseController
 
 __all__ = []
 
@@ -17,6 +18,8 @@ suspend_key = ["tab"]
 
 # Light attack key.
 la_key = Button.left
+# Block key.
+block_key = Button.right
 
 # Which skills will be used with weaving (same order as in skill_keys).
 weaving_enabled = [1, 1, 1, 1, 1, 0]
@@ -25,7 +28,8 @@ weaving_enabled = [1, 1, 1, 1, 1, 0]
 
 #kc = keyboard.Controller()
 kc = KeyboardController({"backend":"xorg"})
-mc = mouse.Controller()
+#mc = mouse.Controller()
+mc = MouseController({"backend":"xorg"})
 
 ignore_press = False
 ignore_release = False
@@ -54,8 +58,8 @@ def is_suspend_key(key):
 
 
 def weave(key):
-    # TODO: Check if la_key requires mouse or keyboard input.
-    mc.click(la_key)
+    # TODO: Check if la_key and block_key requires mouse or keyboard input.
+    mc.tap(la_key)
     kc.press(key)
 
 
