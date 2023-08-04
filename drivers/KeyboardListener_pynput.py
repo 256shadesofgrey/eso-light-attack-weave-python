@@ -57,7 +57,12 @@ class KeyboardListener:
 
 
   def is_active_key(self, key):
-    if not self.enabled and "'{0}'".format(self.settings["active_keys"][len(self.settings["active_keys"])-1]) != "{0}".format(key):
+    # Suspend key is always active.
+    if "'{0}'".format(self.settings["active_keys"][len(self.settings["active_keys"])-1]) == "{0}".format(key):
+      return True
+
+    # If not enabled, there are no active keys.
+    if not self.enabled:
       return False
 
     for i in range(len(self.settings["active_keys"])):
