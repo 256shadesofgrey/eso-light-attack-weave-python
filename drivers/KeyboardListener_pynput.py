@@ -85,10 +85,7 @@ class KeyboardListener:
 
     if not self.is_active_key(key):
       # If it's not a skill key or the key is disabled, just pass it through.
-      try:
-        self.kc.press(key.char)
-      except AttributeError:
-        self.kc.press(key)
+      self.kc.press(key)
     else:
       self.action(key)
 
@@ -105,10 +102,7 @@ class KeyboardListener:
     if key in self.held_down:
       self.held_down.remove(key)
 
-    try:
-      self.kc.release(key.char)
-    except AttributeError:
-      self.kc.release(key)
+    self.kc.release(key)
 
 
   def is_pressed(self, key):
