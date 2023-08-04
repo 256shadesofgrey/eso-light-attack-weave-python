@@ -99,10 +99,17 @@ ml.join_listener()
 kl.join_listener()
 
 
+# def on_activate_7():
+#     kc.press("8")
+#
+#
 # def main():
-#     with keyboard.Listener(on_press=on_press, on_release=on_release,
-#                            suppress=True) as listener:
-#         listener.join()
+#     # with keyboard.Listener(on_press=on_press, on_release=on_release,
+#     #                        suppress=True) as listener:
+#     #     listener.join()
+#     with keyboard.GlobalHotKeys({"7":on_activate_7}, suppress = True) as ghk:
+#         ghk.join()
+#
 #
 #
 # if __name__ == "__main__":main()
