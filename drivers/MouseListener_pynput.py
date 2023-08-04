@@ -52,6 +52,10 @@ class MouseListener:
     self.listener.join()
 
 
+  def stop_listener(self):
+    self.listener.stop()
+
+
   def is_active_key(self, key):
     for i in range(len(self.settings["active_keys"])):
       if "'{0}'".format(self.settings["active_keys"][i]) == "{0}".format(key):

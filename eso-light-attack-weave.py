@@ -15,7 +15,7 @@ __all__ = []
 skill_keys = ["1", "2", "3", "4", "5", "r"]
 
 # Key used to enable/disable the macro
-suspend_key = ["tab"]
+suspend_key = ["9"]
 
 # Light attack key.
 la_key = Button.left
@@ -26,6 +26,8 @@ block_key = Button.right
 weaving_enabled = [1, 1, 1, 1, 1, 0]
 
 #===================================
+
+suspended = False
 
 #kc = keyboard.Controller()
 kc = KeyboardController({"backend":"xorg"})
@@ -53,6 +55,7 @@ def is_enabled_skill_key(key):
 
 
 def is_suspend_key(key):
+    print("is_suspend_key()")
     for k in suspend_key:
         if "'{0}'".format(k) == "{0}".format(key):
             return True
@@ -68,14 +71,21 @@ def weave(key):
 
 
 def suspend_toggle(key):
-    #TODO: implement suspend functionality
-    return True
+    global suspended
+    print("Suspend toggle")
+    if suspended == False:
+        kl.disable()
+        suspended = True
+    else:
+        kl.enable()
+        suspended = False
 
 
 def action(key):
     if is_enabled_skill_key(key):
         weave(key)
     elif is_suspend_key(key):
+        print("suspend key")
         suspend_toggle(key)
 
 
@@ -87,41 +97,6 @@ ml.start_listener()
 kl.start_listener()
 ml.join_listener()
 kl.join_listener()
-
-# def on_press(key):
-#     # Make sure we don't intercept the key we just sent.
-#     global ignore_press
-#     if ignore_press:
-#         ignore_press = False
-#         return
-#     ignore_press = True
-#
-#     print("Pressed: {0}".format(key))
-#
-#     if not is_enabled_skill_key(key):
-#         # If it's not a skill key or the key is disabled, just pass it through.
-#         try:
-#             kc.press(key.char)
-#         except AttributeError:
-#             kc.press(key)
-#     else:
-#         weave(key)
-#
-#
-# def on_release(key):
-#     # Make sure we don't intercept the key we just sent.
-#     global ignore_release
-#     if ignore_release:
-#         ignore_release = False
-#         return
-#     ignore_release = True
-#
-#     print("Released: {0}".format(key))
-#
-#     try:
-#         kc.release(key.char)
-#     except AttributeError:
-#         kc.release(key)
 
 
 # def main():

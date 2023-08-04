@@ -8,6 +8,8 @@ class KeyboardListener:
   ignore_press = False
   ignore_release = False
 
+  enabled = True
+
   def __init__(self, kc=None, action=None, settings={"active_keys":[], "backend":"auto"}):
     self.settings = settings
 
@@ -50,10 +52,18 @@ class KeyboardListener:
     self.listener.join()
 
 
+  def stop_listener(self):
+    self.listener.stop()
+
+
   def is_active_key(self, key):
+    if not self.enabled and "'{0}'".format(self.settings["active_keys"][len(self.settings["active_keys"])-1]) != "{0}".format(key):
+      return False
+
     for i in range(len(self.settings["active_keys"])):
       if "'{0}'".format(self.settings["active_keys"][i]) == "{0}".format(key):
         return True
+
     return False
 
 
@@ -101,3 +111,11 @@ class KeyboardListener:
       return True
     else:
       return False
+
+
+  def enable(self):
+    self.enabled = True
+
+
+  def disable(self):
+    self.enabled = False
