@@ -15,7 +15,7 @@ __all__ = []
 skill_keys = ["1", "2", "3", "4", "5", "r"]
 
 # Key used to enable/disable the macro
-suspend_key = ["9"]
+suspend_key = ["-", "ß"]
 
 # Light attack key.
 la_key = Button.left
