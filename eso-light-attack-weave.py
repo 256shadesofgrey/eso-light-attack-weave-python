@@ -15,7 +15,7 @@ __all__ = []
 skill_keys = ["1", "2", "3", "4", "5", "r"]
 
 # Keys that will activate the weaving functionality.
-activation_keys = [Key.f13, Key.f14, Key.f15, Key.f16, Key.f17, Key.f18]
+activation_keys = [Key.f7, Key.f8, Key.f9, Key.f10, Key.f11, Key.f12]
 
 # Key used to enable/disable the macro
 suspend_key = ["-", "ß"]
@@ -70,7 +70,7 @@ def weave(key):
     if not ml.is_pressed(la_key) and not ml.is_pressed(block_key):
         mc.tap(la_key)
     # mc.tap(la_key)
-    kc.press(key)
+    kc.tap(key)
 
 
 def suspend_toggle(key):
