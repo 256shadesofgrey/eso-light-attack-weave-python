@@ -14,6 +14,9 @@ __all__ = []
 # Keys used for the skills.
 skill_keys = ["1", "2", "3", "4", "5", "r"]
 
+# Keys that will activate the weaving functionality.
+activation_keys = [Key.f13, Key.f14, Key.f15, Key.f16, Key.f17, Key.f18]
+
 # Key used to enable/disable the macro
 suspend_key = ["-", "ß"]
 
@@ -48,14 +51,14 @@ def is_skill_key(key):
 
 def is_enabled_skill_key(key):
     for i in range(len(skill_keys)):
-        if "'{0}'".format(skill_keys[i]) == "{0}".format(key) and \
+        if ("'{0}'".format(skill_keys[i]) == "{0}".format(key) or \
+            "{0}".format(skill_keys[i]) == "{0}".format(key)) and \
                 weaving_enabled[i] == 1:
             return True
     return False
 
 
 def is_suspend_key(key):
-    print("is_suspend_key()")
     for k in suspend_key:
         if "'{0}'".format(k) == "{0}".format(key):
             return True
@@ -82,6 +85,7 @@ def suspend_toggle(key):
 
 
 def action(key):
+    #print("Performing action on: {0}".format(key))
     if is_enabled_skill_key(key):
         weave(key)
     elif is_suspend_key(key):
@@ -90,7 +94,7 @@ def action(key):
 
 
 # ml = MouseListener(mc, {"backend":"xorg"})
-kl = KeyboardListener(kc, action, {"active_keys":skill_keys+suspend_key, "backend":"xorg"})
+kl = KeyboardListener(kc, action, {"active_keys":activation_keys+suspend_key, "skill_keys":skill_keys, "backend":"xorg"})
 # ml = MouseListener(mc, {"backend":"xorg"})
 
 ml.start_listener()

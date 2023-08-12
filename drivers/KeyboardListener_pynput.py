@@ -10,7 +10,9 @@ class KeyboardListener:
 
   enabled = True
 
-  def __init__(self, kc=None, action=None, settings={"active_keys":[], "backend":"auto"}):
+  skill_keys_different_from_active_keys = False
+
+  def __init__(self, kc=None, action=None, settings={"active_keys":[], "skill_keys":[], "backend":"auto"}):
     self.settings = settings
 
     if self.settings["backend"] != "auto":
@@ -36,12 +38,15 @@ class KeyboardListener:
     self.settings = settings
     self.action = action
 
-    # Start the actual listener.
-    # with keyboard.Listener(on_press=self.on_press, on_release=self.on_release, suppress=True) as listener_keyboard:
-    #     listener_keyboard.join()
-    self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release, suppress=True)
-    # self.listener.start()
-    # self.listener.join()
+    for i in range(len(settings["skill_keys"])):
+      if self.settings["skill_keys"][i] != self.settings["active_keys"][i]:
+        self.skill_keys_different_from_active_keys = True
+        break
+
+    if self.skill_keys_different_from_active_keys:
+      self.listener = keyboard.Listener(on_press=self.on_press_different_skill_key, on_release=self.on_release_different_skill_key, suppress=False)
+    else:
+      self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release, suppress=True)
 
 
   def start_listener(self):
@@ -56,6 +61,16 @@ class KeyboardListener:
     self.listener.stop()
 
 
+  def match_skill(self, key):
+    if not self.is_active_key(key):
+      return False
+    key_index = self.settings["active_keys"].index(key)
+    if key_index >= len(self.settings["skill_keys"]):
+      return False
+    print("Matched with:", self.settings["skill_keys"][key_index])
+    return self.settings["skill_keys"][key_index]
+
+
   def is_active_key(self, key):
     # Suspend key is always active.
     if "'{0}'".format(self.settings["active_keys"][len(self.settings["active_keys"])-1]) == "{0}".format(key):
@@ -66,7 +81,9 @@ class KeyboardListener:
       return False
 
     for i in range(len(self.settings["active_keys"])):
-      if "'{0}'".format(self.settings["active_keys"][i]) == "{0}".format(key):
+      #print("{0}".format(self.settings["active_keys"][i]))
+      #print("{0}".format(key))
+      if "'{0}'".format(self.settings["active_keys"][i]) == "{0}".format(key) or "{0}".format(self.settings["active_keys"][i]) == "{0}".format(key):
         return True
 
     return False
@@ -103,6 +120,22 @@ class KeyboardListener:
       self.held_down.remove(key)
 
     self.kc.release(key)
+
+
+  def on_press_different_skill_key(self, key):
+    print("*Pressed: {0}".format(key))
+
+    self.held_down.add(key)
+
+    if self.is_active_key(key):
+      self.action(self.match_skill(key))
+
+
+  def on_release_different_skill_key(self, key):
+    print("*Released: {0}".format(key))
+
+    if key in self.held_down:
+      self.held_down.remove(key)
 
 
   def is_pressed(self, key):
