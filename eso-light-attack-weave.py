@@ -1,6 +1,7 @@
 from pynput import keyboard, mouse
 from pynput.keyboard import Key
 from pynput.mouse import Button
+from time import sleep
 
 from drivers.KeyboardController_pynput import KeyboardController
 from drivers.KeyboardListener_pynput import KeyboardListener
@@ -27,6 +28,9 @@ block_key = Button.right
 
 # Which skills will be used with weaving (same order as in skill_keys).
 weaving_enabled = [1, 1, 1, 1, 1, 0]
+
+# Delay between light attack and skill when weaving.
+weaving_delay = 0.03
 
 #===================================
 
@@ -69,6 +73,7 @@ def weave(key):
     # TODO: Check if la_key and block_key requires mouse or keyboard input.
     if not ml.is_pressed(la_key) and not ml.is_pressed(block_key):
         mc.tap(la_key)
+        sleep(weaving_delay)
     # mc.tap(la_key)
     kc.tap(key)
 
