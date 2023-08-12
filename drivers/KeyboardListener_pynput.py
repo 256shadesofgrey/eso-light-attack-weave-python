@@ -64,9 +64,15 @@ class KeyboardListener:
   def match_skill(self, key):
     if not self.is_active_key(key):
       return False
-    key_index = self.settings["active_keys"].index(key)
+
+    if key in self.settings["active_keys"]:
+      key_index = self.settings["active_keys"].index(key)
+    else:
+      return key
+
     if key_index >= len(self.settings["skill_keys"]):
       return False
+
     print("Matched with:", self.settings["skill_keys"][key_index])
     return self.settings["skill_keys"][key_index]
 
