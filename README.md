@@ -1,7 +1,7 @@
 # eso-light-attack-weave-python
 This is a rewrite of [this](https://github.com/256shadesofgrey/eso-light-attack-weave) AutoHotkey script in python.
  The original macro only works on Windows, but I have since switched to Linux as my daily driver,
- and hence I decided to rewrite it in a language supported on both plattforms.
+ and hence I decided to rewrite it in a language supported on both platforms.
  Because I rarely play ESO any more, the development will be slow, so don't expect feature parity with the AHK script any time soon.
  For this reason I highly recommend that you keep using the AHK script for the time being.
 
