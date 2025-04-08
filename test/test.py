@@ -1,46 +1,18 @@
-from pynput import keyboard
-from pynput.keyboard import Key
-from time import sleep
+import os
 
-kc = keyboard.Controller()
-ignore_press = False
-ignore_release = False
+if 'KDE' in os.environ:
+  print("KDE in os.environ")
+else:
+  print("KDE not in os.environ")
 
-def on_press(key):
-  # Make sure we don't intercept the key we just sent.
-  global ignore_press
-  if ignore_press:
-    ignore_press = False
-    return
-  ignore_press = True
+print(os.environ["XDG_SESSION_TYPE"])
+print(os.environ["XDG_SESSION_DESKTOP"])
+print(os.environ["XDG_CURRENT_DESKTOP"])
 
-  try:
-    kc.press(key.char)
-  except AttributeError:
-    kc.press(key)
+# Print the entire os.environ dictionary
+print(os.environ)
 
-
-def on_release(key):
-  # Make sure we don't intercept the key we just sent.
-  global ignore_release
-  if ignore_release:
-    ignore_release = False
-    return
-  ignore_release = True
-
-  try:
-    kc.release(key.char)
-  except AttributeError:
-    kc.release(key)
-
-
-with keyboard.Listener(on_press=on_press, on_release=on_release, suppress=True) as listener:
-  listener.join()
-
-
-
-
-# sleep(3)
-#
-# kc.press(Key.backspace)
-# kc.release(Key.backspace)
+# Alternatively, iterate through and print each key-value pair:
+print("\nIterating through environment variables:")
+for key, value in os.environ.items():
+    print(f"{key}: {value}")

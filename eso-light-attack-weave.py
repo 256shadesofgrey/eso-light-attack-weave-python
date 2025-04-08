@@ -1,124 +1,207 @@
-from pynput import keyboard, mouse
-from pynput.keyboard import Key
-from pynput.mouse import Button
-from time import sleep
+#!/usr/bin/env python3
 
-from drivers.KeyboardController_pynput import KeyboardController
-from drivers.KeyboardListener_pynput import KeyboardListener
-from drivers.MouseController_pynput import MouseController
-from drivers.MouseListener_pynput import MouseListener
+import sys
+import os
 
-__all__ = []
+# Imports for the KDE backend.
+try:
+    import dbus
+    from PySide6.QtCore import QObject
+    from PySide6.QtCore import QCoreApplication
+    from PySide6.QtGui import QMouseEvent
+    import subprocess
+except ImportError:
+    pass
 
-#========== Configuration ==========
-
-# Keys used for the skills.
-skill_keys = ["1", "2", "3", "4", "5", "r"]
-
-# Keys that will activate the weaving functionality.
-activation_keys = [Key.f7, Key.f8, Key.f9, Key.f10, Key.f11, Key.f12]
-
-# Key used to enable/disable the macro
-suspend_key = ["-", "ß"]
-
-# Light attack key.
-la_key = Button.left
-# Block key.
-block_key = Button.right
-
-# Which skills will be used with weaving (same order as in skill_keys).
-weaving_enabled = [1, 1, 1, 1, 1, 0]
-
-# Delay between light attack and skill when weaving.
-weaving_delay = 0.03
-
-#===================================
-
-suspended = False
-
-#kc = keyboard.Controller()
-kc = KeyboardController({"backend":"xorg"})
-#mc = mouse.Controller()
-mc = MouseController({"backend":"xorg"})
-ml = MouseListener(mc, {"backend":"xorg"})
-
-#ignore_press = False
-#ignore_release = False
+# Imports for the windows backend.
+try:
+    import keyboard
+except ImportError:
+    pass
 
 
-def is_skill_key(key):
-    for k in skill_keys:
-        if "'{0}'".format(k) == "{0}".format(key):
+# --- Common Interface for Platform Backends ---
+class InputBackend:
+    """Abstract base class for platform-specific input handling."""
+
+    def register_hotkey(self, key, callback):
+        raise NotImplementedError
+
+    def unregister_hotkeys(self):
+        raise NotImplementedError
+
+    def is_left_button_pressed(self):
+        raise NotImplementedError
+
+    def is_right_button_pressed(self):
+        raise NotImplementedError
+
+    def press_and_release(self, key):
+        raise NotImplementedError
+
+
+# --- KDE Plasma Backend (X11 or Wayland) ---
+class KDEPlasmaBackend(InputBackend):
+    def __init__(self):
+        if not QCoreApplication.instance(): #Create a new app instance if one isn't already running
+            self.app = QCoreApplication(sys.argv)
+        else:
+            self.app = QCoreApplication.instance()  # Use the existing application
+
+        self.bus = dbus.SessionBus()
+        self.kga = self.bus.get_object("org.kde.kglobalaccel", "/kglobalaccel")
+        self.shortcuts = {}  # Store shortcut names for unregistration
+
+        self.mouse_filter = MouseEventFilter()
+        self.app.installEventFilter(self.mouse_filter)
+
+    def register_hotkey(self, key, callback):
+        """Registers a global hotkey with KDE."""
+        shortcut_name = f"eso_script_shortcut_{key}" # Unique name
+        try:
+            self.kga.RegisterShortcut(shortcut_name, key, callback)  # Register the shortcut
+            self.shortcuts[key] = shortcut_name # Store for unregistration
+            print(f"Registered hotkey '{key}' as '{shortcut_name}'")
+        except dbus.exceptions.DBusException as e:
+            print(f"Error registering hotkey '{key}': {e}")
+
+    def unregister_hotkeys(self):
+        """Unregisters all dynamically created hotkeys."""
+        for key, shortcut_name in self.shortcuts.items():
+            try:
+                self.kga.UnregisterShortcut(shortcut_name)  # Unregister the shortcut
+                print(f"Unregistered hotkey '{key}' ('{shortcut_name}')")
+            except dbus.exceptions.DBusException as e:
+                print(f"Error unregistering hotkey '{key}': {e}")
+
+    def is_left_button_pressed(self):
+        return self.mouse_filter.left_button_pressed
+
+    def is_right_button_pressed(self):
+        return self.mouse_filter.right_button_pressed
+
+    def press_and_release(self, key):
+        subprocess.run(["ydotool", "key", key], check=True)
+
+
+# --- Windows Backend ---
+class WindowsBackend(InputBackend):
+    def __init__(self):
+        self.registered_keys = {}
+
+    def register_hotkey(self, key, callback):
+        keyboard.add_hotkey(key, callback)  # Register shortcut
+        self.registered_keys.append(key)
+        return True
+
+    def unregister_hotkeys(self):
+        for key in self.registered_keys: # registered_keys is a member variable that needs to be populated when registering keys
+            keyboard.remove_hotkey(key)
+
+    def is_left_button_pressed(self):
+        return keyboard.is_pressed('left')
+
+    def is_right_button_pressed(self):
+        return keyboard.is_pressed('right')
+
+    def press_and_release(self, key):
+        keyboard.press_and_release(key)
+
+
+# --- Mouse Event Filter (KDE Plasma Only) ---
+class MouseEventFilter(QObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.left_button_pressed = False
+        self.right_button_pressed = False
+
+    def eventFilter(self, watched_object, event):
+        if isinstance(event, QMouseEvent):
+            if event.type() == QMouseEvent.MouseButtonPress:
+                if event.button() == Qt.LeftButton:
+                    self.left_button_pressed = True
+                elif event.button() == Qt.RightButton:
+                    self.right_button_pressed = True
+            elif event.type() == QMouseEvent.MouseButtonRelease:
+                if event.button() == Qt.LeftButton:
+                    self.left_button_pressed = False
+                elif event.button() == Qt.RightButton:
+                    self.right_button_pressed = False
+
+        return super().eventFilter(watched_object, event)  # Pass events to other filters
+
+
+# --- Core Hotkey Handler ---
+class HotkeyHandler:
+    def __init__(self, backend):
+        self.backend = backend
+        self.registered_keys = []
+
+    def register_hotkey(self, key, callback):
+        if self.backend.register_hotkey(key, callback):
+            self.registered_keys.append(key)
             return True
-    return False
+        else:
+            return False
+
+    def unregister_hotkeys(self):
+        self.backend.unregister_hotkeys()
+        self.registered_keys = []
+
+    def simulate_click_and_key(self, event=None):  # Callback function (Windows passes event object)
+        """Simulates a mouse click followed by the given key press."""
+
+        print(event)
+
+        if self.backend.is_left_button_pressed() or self.backend.is_right_button_pressed():
+            print("Mouse button held down. Passing through key.")
+            self.backend.press_and_release(event if event else "a")
+            return  # Exit function without injecting a click
+
+        print("Injecting click + key.")
+        self.backend.press_and_release(event if event else "a")
 
 
-def is_enabled_skill_key(key):
-    for i in range(len(skill_keys)):
-        if ("'{0}'".format(skill_keys[i]) == "{0}".format(key) or \
-            "{0}".format(skill_keys[i]) == "{0}".format(key)) and \
-                weaving_enabled[i] == 1:
-            return True
-    return False
-
-
-def is_suspend_key(key):
-    for k in suspend_key:
-        if "'{0}'".format(k) == "{0}".format(key):
-            return True
-    return False
-
-
-def weave(key):
-    # TODO: Check if la_key and block_key requires mouse or keyboard input.
-    if not ml.is_pressed(la_key) and not ml.is_pressed(block_key):
-        mc.tap(la_key)
-        sleep(weaving_delay)
-    # mc.tap(la_key)
-    kc.tap(key)
-
-
-def suspend_toggle(key):
-    global suspended
-    print("Suspend toggle")
-    if suspended == False:
-        kl.disable()
-        suspended = True
+# --- Main Execution Block ---
+if __name__ == "__main__":
+    #TODO: check if os.environ["XDG_SESSION_DESKTOP"] and os.environ["XDG_SESSION_TYPE"] exist, because if they do not, the following checks will cause an error.
+    if sys.platform == "win32":
+        backend = WindowsBackend()
+    elif sys.platform == "linux": #and os.environ["XDG_SESSION_DESKTOP"] == "KDE":
+        try:
+            backend = KDEPlasmaBackend()
+        except ImportError:
+            print("Failed to initialize KDE Plasma backend")
+            sys.exit(1)
+    elif sys.platform == "linux" and os.environ["XDG_SESSION_TYPE"] == "x11":
+        print("TODO: Implement desktop-independent X11 fallback")
+    elif sys.platform == "linux" and os.environ["XDG_SESSION_TYPE"] == "wayland":
+        print("TODO: Implement desktop-independent wayland fallback")
     else:
-        kl.enable()
-        suspended = False
+        print("Unsupported platform.")
+        sys.exit(1)
 
+    handler = HotkeyHandler(backend)
 
-def action(key):
-    #print("Performing action on: {0}".format(key))
-    if is_enabled_skill_key(key):
-        weave(key)
-    elif is_suspend_key(key):
-        print("suspend key")
-        suspend_toggle(key)
+    # Register hotkeys here
+    hotkeys_to_register = ['1', '2', '3', '4', '5', 'r']
+    for key in hotkeys_to_register:
+        handler.register_hotkey(key, handler.simulate_click_and_key)
 
+    print("Hotkeys registered. Script running...")
 
-# ml = MouseListener(mc, {"backend":"xorg"})
-kl = KeyboardListener(kc, action, {"active_keys":activation_keys+suspend_key, "skill_keys":skill_keys, "backend":"xorg"})
-# ml = MouseListener(mc, {"backend":"xorg"})
-
-ml.start_listener()
-kl.start_listener()
-ml.join_listener()
-kl.join_listener()
-
-
-# def on_activate_7():
-#     kc.press("8")
-#
-#
-# def main():
-#     # with keyboard.Listener(on_press=on_press, on_release=on_release,
-#     #                        suppress=True) as listener:
-#     #     listener.join()
-#     with keyboard.GlobalHotKeys({"7":on_activate_7}, suppress = True) as ghk:
-#         ghk.join()
-#
-#
-#
-# if __name__ == "__main__":main()
+    try:
+        if sys.platform == "win32":
+            keyboard.wait()  # Keep script alive on Windows
+        elif isinstance(backend, KDEPlasmaBackend):
+            backend.app.exec() #Keep running on KDE Plasma, Wayland
+        else:
+            print("TODO: Not (yet) supported platform.")
+    except KeyboardInterrupt:
+        handler.unregister_hotkeys()
+        print("KeyboardInterrupt: Hotkeys unregistered.")
+        sys.exit(1)
+    finally:
+        handler.unregister_hotkeys()
+        print("Hotkeys unregistered.")
+        sys.exit(1)
