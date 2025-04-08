@@ -52,14 +52,16 @@ class KDEPlasmaBackend(InputBackend):
         self.kga = self.bus.get_object("org.kde.kglobalaccel", "/kglobalaccel")
         self.shortcuts = {}  # Store shortcut names for unregistration
 
+        self.signal_handler = SignalHandler(self) #Create the signal handler
         self.mouse_filter = MouseEventFilter()
         self.app.installEventFilter(self.mouse_filter)
+
 
     def register_hotkey(self, key, callback):
         """Registers a global hotkey with KDE."""
         shortcut_name = f"eso_script_shortcut_{key}" # Unique name
         try:
-            self.kga.RegisterShortcut(shortcut_name, key, callback)  # Register the shortcut
+            self.kga.RegisterShortcut(shortcut_name, key, self.signal_handler.slot)  # Register the shortcut using the signal handler
             self.shortcuts[key] = shortcut_name # Store for unregistration
             print(f"Registered hotkey '{key}' as '{shortcut_name}'")
         except dbus.exceptions.DBusException as e:
@@ -82,6 +84,22 @@ class KDEPlasmaBackend(InputBackend):
 
     def press_and_release(self, key):
         subprocess.run(["ydotool", "key", key], check=True)
+
+
+# --- Signal Handler Class ---
+class SignalHandler(QObject):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+    @dbus.slot()
+    def slot(self, shortcut_name, pressed): #Signal is (string shortcut_name, bool pressed)
+        if pressed:  #Only inject on press. The release event doesn't matter
+            key = shortcut_name.split("_")[-1]
+            parent.simulate_click_and_key(key)
+
+    def setParent(self, parent): #Need this for the KDE backend to work correctly.
+        self.parent = parent
+        return True
 
 
 # --- Windows Backend ---
@@ -148,18 +166,18 @@ class HotkeyHandler:
         self.backend.unregister_hotkeys()
         self.registered_keys = []
 
-    def simulate_click_and_key(self, event=None):  # Callback function (Windows passes event object)
+    def simulate_click_and_key(self, key):  # Callback function (Windows passes event object)
         """Simulates a mouse click followed by the given key press."""
 
-        print(event)
+        print("Key pressed: ", key) #Print the actual key that was pressed
 
         if self.backend.is_left_button_pressed() or self.backend.is_right_button_pressed():
             print("Mouse button held down. Passing through key.")
-            self.backend.press_and_release(event if event else "a")
+            self.backend.press_and_release(key)
             return  # Exit function without injecting a click
 
         print("Injecting click + key.")
-        self.backend.press_and_release(event if event else "a")
+        self.backend.press_and_release(key)
 
 
 # --- Main Execution Block ---
