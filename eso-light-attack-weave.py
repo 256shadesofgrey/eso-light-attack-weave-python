@@ -83,7 +83,12 @@ class KDEPlasmaBackend(InputBackend):
         return self.mouse_filter.right_button_pressed
 
     def press_and_release(self, key):
-        subprocess.run(["ydotool", "key", key], check=True)
+        if key == "left": #Simulate a left-click using ydotool when requested by simulate_click_and_key
+            subprocess.run(["ydotool", "click", "0xC0"], check=True)  # Left Mouse Click
+        elif key == "right": #Simulate a right-click using ydotool when requested by simulate_click_and_key
+            subprocess.run(["ydotool", "click", "0xC1"], check=True)  # Right Mouse Click
+        else:
+            subprocess.run(["ydotool", "type", key], check=True)
 
 
 # --- Signal Handler Class ---
@@ -177,6 +182,7 @@ class HotkeyHandler:
             return  # Exit function without injecting a click
 
         print("Injecting click + key.")
+        self.backend.press_and_release("left")
         self.backend.press_and_release(key)
 
 
